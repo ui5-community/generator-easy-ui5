@@ -1,35 +1,46 @@
-# This is a basic workflow to help you get started with Actions
-
-name: Create Release
+name: Publish on NPM / Create GitHub Release
 
 on:
   push:
     tags:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
+permissions:
+  contents: read
+  id-token: write # REQUIRED for OIDC
+
 jobs:
   publish-npm:
+    name: Publish on NPM
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
 
-      - run: npm install
-      - run: npm test
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish via npm Trusted Publishing (OIDC)
+        run: npm publish --provenance
 
   create-release:
+    name: Create GitHub Release
     needs: publish-npm
-    name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
