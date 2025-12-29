@@ -6,7 +6,7 @@ on:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 permissions:
-  contents: read
+  contents: write # REQUIRED to create releases
   packages: write # REQUIRED to create releases
   id-token: write # REQUIRED for OIDC (npm publish)
 
