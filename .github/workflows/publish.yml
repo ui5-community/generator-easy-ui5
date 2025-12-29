@@ -7,7 +7,8 @@ on:
 
 permissions:
   contents: read
-  id-token: write # REQUIRED for OIDC
+  packages: write # REQUIRED to create releases
+  id-token: write # REQUIRED for OIDC (npm publish)
 
 jobs:
   publish-npm:
