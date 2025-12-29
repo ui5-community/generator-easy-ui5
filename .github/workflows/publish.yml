@@ -31,7 +31,7 @@ jobs:
         run: npm test
 
       - name: Publish via npm Trusted Publishing (OIDC)
-        run: npm publish --provenance
+        run: npm publish --access public
 
   create-release:
     name: Create GitHub Release
