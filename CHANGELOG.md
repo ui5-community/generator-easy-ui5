@@ -1,12 +1,21 @@
+## <small>3.9.1 (2025-12-29)</small>
+
+- 3.9.1 ([8d3e50d](https://github.com/ui5-community/generator-easy-ui5/commit/8d3e50d))
+- build: give permissions to create releases ([ac656d6](https://github.com/ui5-community/generator-easy-ui5/commit/ac656d6))
+- build: give permissions to create releases ([25b76c7](https://github.com/ui5-community/generator-easy-ui5/commit/25b76c7))
+
 ## 3.9.0 (2025-12-29)
 
+- build: update publish.yml ([7550f82](https://github.com/ui5-community/generator-easy-ui5/commit/7550f82))
+- build: update repo url in package.json ([282ff34](https://github.com/ui5-community/generator-easy-ui5/commit/282ff34))
+- build: use node 24 for publish process ([aeec69a](https://github.com/ui5-community/generator-easy-ui5/commit/aeec69a))
 - 3.8.0 ([c68817b](https://github.com/ui5-community/generator-easy-ui5/commit/c68817b))
 - 3.8.1 ([d5ea70d](https://github.com/ui5-community/generator-easy-ui5/commit/d5ea70d))
 - 3.8.2 ([ed1f04b](https://github.com/ui5-community/generator-easy-ui5/commit/ed1f04b))
 - 3.8.2 ([1a294cf](https://github.com/ui5-community/generator-easy-ui5/commit/1a294cf))
 - 3.8.3 ([465ae4c](https://github.com/ui5-community/generator-easy-ui5/commit/465ae4c))
 - 3.8.4 ([b3739cd](https://github.com/ui5-community/generator-easy-ui5/commit/b3739cd))
-- 3.9.0 ([ff0bcc4](https://github.com/ui5-community/generator-easy-ui5/commit/ff0bcc4))
+- 3.9.0 ([bbe079f](https://github.com/ui5-community/generator-easy-ui5/commit/bbe079f))
 - Reuse Version update from dep to toml ([79a4004](https://github.com/ui5-community/generator-easy-ui5/commit/79a4004))
 - chore: bump deps ([95ab483](https://github.com/ui5-community/generator-easy-ui5/commit/95ab483))
 - chore: keep using own husky switch ([0d2af8b](https://github.com/ui5-community/generator-easy-ui5/commit/0d2af8b))
