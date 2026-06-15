@@ -2,9 +2,13 @@ name: Validate PR/Push
 
 on:
   push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
+
+permissions: read-all
 
 jobs:
   run-test:
@@ -13,12 +17,13 @@ jobs:
       matrix:
         version: [20, 22, 24]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.version }}
           registry-url: https://registry.npmjs.org/
 
       - run: git config --global user.email "cicd@example.com" && git config --global user.name "Your Name"
-      - run: npm install
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high
       - run: npm test
