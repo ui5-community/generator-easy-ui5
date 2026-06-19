@@ -57,7 +57,7 @@ export default class EasyUI5Generator extends Generator {
 
 	async _npmInstall(dir, withDevDeps) {
 		return new Promise((resolve, reject) => {
-			this.spawnCommand("npm", ["install", "--no-progress", "--ignore-engines", "--ignore-scripts"], {
+			this.spawnCommand("npm", ["install", "--no-progress", "--ignore-engines", "--ignore-scripts", "--prefer-offline"], {
 				stdio: this.config.verbose ? "inherit" : "ignore",
 				cwd: dir,
 				env: {

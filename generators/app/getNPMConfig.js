@@ -1,12 +1,15 @@
-import libnpmconfig from "libnpmconfig";
+import { execSync } from "child_process";
 
-// helper to retrieve config entries from npm
-//   --> npm config set easy-ui5_addGhOrg XYZ
 let npmConfig;
 
 export default function getNPMConfig(configName, prefix = "easy-ui5_") {
 	if (!npmConfig) {
-		npmConfig = libnpmconfig.read();
+		try {
+			const output = execSync("npm config list --json", { encoding: "utf-8", timeout: 10000 });
+			npmConfig = JSON.parse(output);
+		} catch {
+			npmConfig = {};
+		}
 	}
-	return npmConfig && npmConfig[`${prefix}${configName}`];
+	return npmConfig[`${prefix}${configName}`];
 }

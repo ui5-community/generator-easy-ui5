@@ -1,6 +1,6 @@
-const Generator = require("yeoman-generator");
+import Generator from "yeoman-generator";
 
-module.exports = class extends Generator {
+export default class extends Generator {
 	static hidden = true;
 
 	prompting() {
@@ -8,4 +8,4 @@ module.exports = class extends Generator {
 	}
 
 	async writing() {}
-};
+}
