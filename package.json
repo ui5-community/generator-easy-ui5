@@ -56,7 +56,7 @@
     "node-fetch": "^3.3.2",
     "rimraf": "^6.1.3",
     "yeoman-environment": "^6.1.0",
-    "yeoman-generator": "^7.5.1",
+    "yeoman-generator": "^8.2.2",
     "yosay": "^3.0.0"
   },
   "devDependencies": {
