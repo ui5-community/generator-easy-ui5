@@ -63,7 +63,7 @@
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
     "conventional-changelog-cli": "^5.0.0",
-    "eslint": "^9.39.4",
+    "eslint": "^10.5.0",
     "fs-extra": "^11.3.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
