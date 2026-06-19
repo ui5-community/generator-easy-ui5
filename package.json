@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
-    "@commitlint/config-conventional": "^20.2.0",
+    "@commitlint/config-conventional": "^21.0.2",
     "conventional-changelog-cli": "^5.0.0",
     "eslint": "^9.39.4",
     "fs-extra": "^11.3.5",
