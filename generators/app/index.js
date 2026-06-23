@@ -244,7 +244,17 @@ export default class EasyUI5Generator extends Generator {
 			this.log(chalk.green("\nAvailable generators:"));
 			glob.sync(`${pluginsHome}/*/package.json`).forEach((plugin) => {
 				const name = plugin.match(/.*\/generator-(.+)\/package\.json/)[1];
-				const lib = require(plugin);
+				// Resolve and validate the path is within pluginsHome to satisfy eslint security rule.
+				const resolvedPlugin = path.resolve(plugin);
+				const resolvedPluginsHome = path.resolve(pluginsHome);
+				if (!resolvedPlugin.startsWith(resolvedPluginsHome + path.sep)) {
+					return; // skip paths outside pluginsHome
+				}
+				// plugin is a filesystem path under pluginsHome (Yeoman cache).
+				// Read its package.json directly rather than require()-ing it,
+				// so we never execute arbitrary code from a cached plugin just
+				// to print its version.
+				const lib = JSON.parse(fs.readFileSync(resolvedPlugin, "utf8"));
 				this.log(`  - ${chalk.green(name)}: ${lib.version}`);
 			});
 

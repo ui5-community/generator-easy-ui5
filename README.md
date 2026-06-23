@@ -20,7 +20,7 @@ The purpose of the (preinstalled) `project generator` is to guide you on your fi
 
 ## Requirements
 
-- Get [Node.js](https://nodejs.org/en/download/) (:warning: **version 20 or higher**).
+- Get [Node.js](https://nodejs.org/en/download/) (:warning: **version 20.19 or higher**).
 
 ## Download and Installation
 
@@ -105,6 +105,57 @@ Once you decided on the generator, run:
 yo easy-ui5 [project|ts-app|...]
 ```
 
+## Configuration
+
+easy-ui5 reads its configuration from `~/.easyui5rc.json` (recommended) or
+`~/.easyui5rc` (INI). Both files are optional and use bare option names — no
+prefix needed.
+
+`~/.easyui5rc.json`:
+
+```json
+{
+  "ghAuthToken": "github_pat_...",
+  "ghBaseUrl": "https://github.tools.sap/api/v3",
+  "pluginsHome": "/Users/me/.npm/_generator-easy-ui5/plugin-generators",
+  "addGhBaseUrl": "https://github.tools.sap/api/v3",
+  "addGhOrg": "my-org",
+  "addSubGeneratorPrefix": "generator-"
+}
+```
+
+`~/.easyui5rc` (INI alternative):
+
+```text
+ghAuthToken=github_pat_...
+ghBaseUrl=https://github.tools.sap/api/v3
+```
+
+### Cascade & per-project overrides
+
+Resolution walks from the current working directory up to your home directory
+(ESLint-style). At each level, `.easyui5rc.json` wins over `.easyui5rc`; closer
+files win over farther ones. Add `"root": true` to a file to stop the cascade
+at that level.
+
+### Environment variables
+
+Every option also accepts a `EASY_UI5_<SCREAMING_SNAKE>` environment variable
+which takes precedence over every config file — ideal for CI:
+
+```sh
+EASY_UI5_GH_AUTH_TOKEN=ghp_...
+EASY_UI5_GH_BASE_URL=https://github.tools.sap/api/v3
+EASY_UI5_PLUGINS_HOME=/var/cache/easy-ui5
+```
+
+### Legacy `~/.npmrc` keys (deprecated)
+
+Earlier versions read `easy-ui5_*` keys directly from `~/.npmrc`. These are
+still resolved for one release, but npm 11+ warns and npm 12 will reject
+unknown user config — please move them to `~/.easyui5rc.json`. The generator
+prints a one-time migration notice when it detects legacy keys.
+
 ## Proxy settings
 
 If you are running easy-ui5 behind a coporate proxy, just use the default proxy environment variables for Node.js to configure your corporate proxy:
@@ -134,6 +185,17 @@ Proxies can be passed as env variables or as npm config options. The highest pre
 ## How to obtain support
 
 Please use the GitHub bug tracking system to post questions, bug reports or to create pull requests.
+
+## Releases
+
+Releases are automated via [Changesets](https://github.com/changesets/changesets) and the
+[`Release` workflow](.github/workflows/release.yml). Contributors record the intended semver
+bump and summary in a `.changeset/*.md` file as part of their PR (`npm run changeset`); when
+that PR merges to `main`, a "Version Packages" PR is opened or updated. Merging that PR cuts
+the actual release: version bump, `CHANGELOG.md` update, npm publish via OIDC Trusted
+Publishing, git tag, GitHub Release.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#release-life-cycle) for the contributor-facing details.
 
 ## Contributing
 
