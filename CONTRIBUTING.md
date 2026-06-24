@@ -115,6 +115,25 @@ For CI use the `EASY_UI5_*` environment variables instead (see the README's
 _Configuration_ section). The legacy `easy-ui5_*` keys in `~/.npmrc` are still
 read but produce a one-time deprecation warning — please migrate.
 
+### Logging
+
+Diagnostic output goes through the tagged logger at
+[generators/app/log.js](generators/app/log.js). Use the appropriate severity
+so messages line up cleanly and stream to the right channel:
+
+- `this.logger.debug(...)` — verbose internals (only shown with `--verbose`).
+- `this.logger.info(...)` — informational status (cyan `[INFO ]`, stdout).
+- `this.logger.ok(...)` — successful operation (green `[OK   ]`, stdout).
+- `this.logger.warn(...)` — recoverable / unexpected (yellow `[WARN ]`, stderr).
+- `this.logger.error(...)` — fatal or user-actionable failure (red `[ERROR]`, stderr).
+- `this.logger.plain(...)` — print a line **without** a category tag. Reserve
+  for cosmetic output like banners or formatted help tables.
+
+`this.log(...)` (the Yeoman framework method) is still acceptable for cosmetic
+output that goes through Yeoman's adapter (the welcome banner, the `--list`
+help table, the `--plugins` info dump). Don't use it — or `console.*` — for
+new diagnostic messages.
+
 ## Release Life-Cycle
 
 This project uses [Changesets](https://github.com/changesets/changesets) for

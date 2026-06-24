@@ -10,9 +10,11 @@ import url from "url";
 
 import { glob } from "glob";
 import chalk from "chalk";
-import yosay from "yosay";
 import nodeFetch from "node-fetch";
 import AdmZip from "adm-zip";
+
+import { renderBanner } from "./banner.js";
+import { createLogger } from "./log.js";
 
 import { request } from "@octokit/request";
 import { Octokit } from "@octokit/rest";
@@ -31,6 +33,11 @@ export default class EasyUI5Generator extends Generator {
 
 		defineGeneratorArguments(this);
 		defineGeneratorOptions(this);
+
+		// Tagged logger: [INFO]/[WARN]/[ERROR]/[OK]/[DEBUG]. DEBUG is shown only
+		// when --verbose is set. WARN/ERROR are routed to stderr so they don't
+		// get swallowed when stdout is redirected.
+		this.logger = createLogger({ chalk, verbose: !!this.options.verbose });
 	}
 
 	_showBusy(statusText) {
@@ -57,7 +64,11 @@ export default class EasyUI5Generator extends Generator {
 
 	async _npmInstall(dir, withDevDeps) {
 		return new Promise((resolve, reject) => {
-			this.spawnCommand("npm", ["install", "--no-progress", "--ignore-engines", "--ignore-scripts", "--prefer-offline"], {
+			// yeoman-generator v8+ split the spawn API: `spawnCommand` now takes
+			// `(command, execaOptions)` (no args array — it parses the shell
+			// string), whereas `spawn` takes `(command, args[], options)`. We
+			// pass argv as an array, so we want `spawn`.
+			this.spawn("npm", ["install", "--no-progress", "--ignore-engines", "--ignore-scripts", "--prefer-offline"], {
 				stdio: this.config.verbose ? "inherit" : "ignore",
 				cwd: dir,
 				env: {
@@ -118,9 +129,9 @@ export default class EasyUI5Generator extends Generator {
 				});
 				generator.branch = repoInfo.data.default_branch;
 			} catch (e) {
-				console.error(`Generator "${owner}/${repo}!${dir}${branch ? "#" + branch : ""}" not found! Run with --verbose for details!\n(Hint: ${e.message})`);
+				this.logger.error(`Generator "${owner}/${repo}!${dir}${branch ? "#" + branch : ""}" not found! Run with --verbose for details!\n(Hint: ${e.message})`);
 				if (this.options.verbose) {
-					console.error(e);
+					this.logger.debug(String(e?.stack ?? e));
 				}
 				return;
 			}
@@ -136,17 +147,17 @@ export default class EasyUI5Generator extends Generator {
 			});
 			commitSHA = reqBranch.data.commit.sha;
 		} catch (ex) {
-			console.error(
-				chalk.red(`Failed to retrieve the branch "${generator.branch}" for repository "${generator.name}" for "${generator.org}" organization! Run with --verbose for details!\n(Hint: ${ex.message})`),
+			this.logger.error(
+				`Failed to retrieve the branch "${generator.branch}" for repository "${generator.name}" for "${generator.org}" organization! Run with --verbose for details!\n(Hint: ${ex.message})`,
 			);
 			if (this.options.verbose) {
-				console.error(chalk.red(ex.message));
+				this.logger.debug(String(ex?.stack ?? ex.message));
 			}
 			return;
 		}
 
 		if (this.options.verbose) {
-			this.log(`Using commit ${commitSHA} from @${generator.org}/${generator.name}#${generator.branch}!`);
+			this.logger.debug(`Using commit ${commitSHA} from @${generator.org}/${generator.name}#${generator.branch}!`);
 		}
 		const shaMarker = path.join(generatorPath, `.${commitSHA}`);
 
@@ -154,7 +165,7 @@ export default class EasyUI5Generator extends Generator {
 			// check if the SHA marker exists to know whether the generator is up-to-date or not
 			if (this.options.forceUpdate || !fs.existsSync(shaMarker)) {
 				if (this.options.verbose) {
-					this.log(`Generator ${chalk.yellow(generator.name)} in "${generatorPath}" is outdated!`);
+					this.logger.debug(`Generator ${chalk.yellow(generator.name)} in "${generatorPath}" is outdated!`);
 				}
 				// remove if the SHA marker doesn't exist => outdated!
 				this._showBusy(`  Deleting subgenerator ${chalk.yellow(generator.name)}...`);
@@ -166,7 +177,7 @@ export default class EasyUI5Generator extends Generator {
 		if (!fs.existsSync(generatorPath)) {
 			// unzip the archive
 			if (this.options.verbose) {
-				this.log(`Extracting ZIP to "${generatorPath}"...`);
+				this.logger.debug(`Extracting ZIP to "${generatorPath}"...`);
 			}
 			this._showBusy(`  Downloading subgenerator ${chalk.yellow(generator.name)}...`);
 			const reqZIPArchive = await octokit.repos.downloadZipballArchive({
@@ -186,7 +197,7 @@ export default class EasyUI5Generator extends Generator {
 		// run npm install when not embedding the generator (always for self-healing!)
 		if (!this.options.embed) {
 			if (this.options.verbose) {
-				this.log("Installing the subgenerator dependencies...");
+				this.logger.debug("Installing the subgenerator dependencies...");
 			}
 			this._showBusy(`  Preparing ${chalk.yellow(generator.name)}...`);
 			await this._npmInstall(generatorPath, this.options.pluginsWithDevDeps);
@@ -199,26 +210,26 @@ export default class EasyUI5Generator extends Generator {
 		const home = path.join(__dirname, "..", "..");
 		const pkgJson = JSON.parse(fs.readFileSync(path.join(home, "package.json"), "utf8"));
 
-		// Have Yeoman greet the user.
+		// Have Yeoman greet the user — with our own easy-ui5 banner.
 		if (!this.options.embedded) {
-			this.log(yosay(`Welcome to the ${chalk.red("easy-ui5")} ${chalk.yellow(pkgJson.version)} generator!`));
+			this.log(renderBanner(pkgJson.version, chalk));
 		}
 
 		// by default we install the easy-ui5 plugin generators into the following folder:
 		// %user_dir%/.npm/_generator-easy-ui5/plugin-generators
 		let pluginsHome = this.options.pluginsHome;
 		if (this.options.verbose) {
-			console.info("  Context:");
-			console.info(`    - sourceRoot = ${chalk.green(this.sourceRoot())}`);
-			console.info(`    - destinationRoot = ${chalk.green(this.destinationRoot())}`);
-			console.info("  Options:");
+			this.logger.debug("Context:");
+			this.logger.debug(`  sourceRoot = ${chalk.green(this.sourceRoot())}`);
+			this.logger.debug(`  destinationRoot = ${chalk.green(this.destinationRoot())}`);
+			this.logger.debug("Options:");
 			Object.keys(generatorOptions).forEach((option) => {
-				console.info(`    - ${option} = ${chalk.green(this.options[option])}`);
+				this.logger.debug(`  ${option} = ${chalk.green(this.options[option])}`);
 			});
-			console.info("  Proxy:");
-			console.info(`    - HTTP_PROXY = ${chalk.green(HTTP_PROXY)}`);
-			console.info(`    - HTTPS_PROXY = ${chalk.green(HTTPS_PROXY)}`);
-			console.info(`    - NO_PROXY = ${chalk.green(NO_PROXY)}`);
+			this.logger.debug("Proxy:");
+			this.logger.debug(`  HTTP_PROXY = ${chalk.green(HTTP_PROXY)}`);
+			this.logger.debug(`  HTTPS_PROXY = ${chalk.green(HTTPS_PROXY)}`);
+			this.logger.debug(`  NO_PROXY = ${chalk.green(NO_PROXY)}`);
 		}
 		fs.mkdirSync(pluginsHome, { recursive: true });
 
@@ -265,7 +276,7 @@ export default class EasyUI5Generator extends Generator {
 		// when not running in offline mode!
 		let octokit;
 		if (this.options.offline) {
-			this.log(`Running in ${chalk.yellow("offline")} mode!`);
+			this.logger.info(`Running in ${chalk.yellow("offline")} mode!`);
 		} else {
 			// define the options for the Octokit API
 			const octokitOptions = {
@@ -281,18 +292,18 @@ export default class EasyUI5Generator extends Generator {
 				baseUrl: this.options.ghBaseUrl,
 				throttle: {
 					onRateLimit: (retryAfter, options) => {
-						this.log(`${chalk.yellow("Hit the GitHub API limit!")} Request quota exhausted for this request.`);
+						this.logger.warn("Hit the GitHub API limit! Request quota exhausted for this request.");
 						if (options.request.retryCount === 0) {
 							// only retries once
-							this.log(
-								`Retrying after ${retryAfter} seconds. Alternatively, you can cancel this operation and supply an auth token with the \`--ghAuthToken\` option. For more details, run \`yo easy-ui5 --help\`. `,
+							this.logger.warn(
+								`Retrying after ${retryAfter} seconds. Alternatively, you can cancel this operation and supply an auth token with the \`--ghAuthToken\` option. For more details, run \`yo easy-ui5 --help\`.`,
 							);
 							return true;
 						}
 					},
 					onSecondaryRateLimit: () => {
-						// does not retry, only logs a warning
-						this.log(`${chalk.red("Hit the GitHub API limit again!")} Please supply an auth token with the \`--ghAuthToken\` option. For more details, run \`yo easy-ui5 --help\` `);
+						// does not retry, only logs an error
+						this.logger.error("Hit the GitHub API limit again! Please supply an auth token with the `--ghAuthToken` option. For more details, run `yo easy-ui5 --help`.");
 					},
 				},
 			};
@@ -363,7 +374,7 @@ export default class EasyUI5Generator extends Generator {
 			};
 			// log which generator is being used!
 			if (this.options.verbose) {
-				this.log(`Using generator ${chalk.green(`${owner}/${repo}!${dir}${branch ? "#" + branch : ""}`)}`);
+				this.logger.debug(`Using generator ${chalk.green(`${owner}/${repo}!${dir}${branch ? "#" + branch : ""}`)}`);
 			}
 		}
 
@@ -427,9 +438,9 @@ export default class EasyUI5Generator extends Generator {
 								};
 							});
 					} catch (e) {
-						console.error(`Failed to connect to bestofui5.org to retrieve all available generators! Run with --verbose for details!\n(Hint: ${e.message})`);
+						this.logger.error(`Failed to connect to bestofui5.org to retrieve all available generators! Run with --verbose for details!\n(Hint: ${e.message})`);
 						if (this.options.verbose) {
-							console.error(e);
+							this.logger.debug(String(e?.stack ?? e));
 						}
 						return;
 					}
@@ -438,9 +449,9 @@ export default class EasyUI5Generator extends Generator {
 					try {
 						availGenerators = await listGeneratorsForOrg(this.options.ghOrg, this.options.subGeneratorPrefix, this.options.ghThreshold);
 					} catch (e) {
-						console.error(`Failed to connect to GitHub to retrieve all available generators for "${this.options.ghOrg}" organization! Run with --verbose for details!\n(Hint: ${e.message})`);
+						this.logger.error(`Failed to connect to GitHub to retrieve all available generators for "${this.options.ghOrg}" organization! Run with --verbose for details!\n(Hint: ${e.message})`);
 						if (this.options.verbose) {
-							console.error(e);
+							this.logger.debug(String(e?.stack ?? e));
 						}
 						return;
 					}
@@ -452,14 +463,16 @@ export default class EasyUI5Generator extends Generator {
 						}
 					} catch (e) {
 						if (this.options.verbose) {
-							this.log(`Failed to connect to GitHub retrieve additional generators for "${this.options.addGhOrg}" organization! Try to retrieve for user...`);
+							this.logger.debug(`Failed to connect to GitHub retrieve additional generators for "${this.options.addGhOrg}" organization! Try to retrieve for user...`);
 						}
 						try {
 							availGenerators = availGenerators.concat(await listGeneratorsForUser(this.options.addGhOrg, this.options.addSubGeneratorPrefix, this.options.ghThreshold));
 						} catch (e1) {
-							console.error(`Failed to connect to GitHub to retrieve additional generators for organization or user "${this.options.addGhOrg}"! Run with --verbose for details!\n(Hint: ${e.message})`);
+							this.logger.error(
+								`Failed to connect to GitHub to retrieve additional generators for organization or user "${this.options.addGhOrg}"! Run with --verbose for details!\n(Hint: ${e.message})`,
+							);
 							if (this.options.verbose) {
-								console.error(e1);
+								this.logger.debug(String(e1?.stack ?? e1));
 							}
 							return;
 						}
@@ -475,7 +488,7 @@ export default class EasyUI5Generator extends Generator {
 
 			// if no generator is provided and doesn't exist, ask for generator name
 			if (this.options.generator && !generator) {
-				this.log(`The generator ${chalk.red(this.options.generator)} was not found. Please select an existing generator!`);
+				this.logger.error(`The generator ${chalk.red(this.options.generator)} was not found. Please select an existing generator!`);
 			}
 
 			// still not found, select a generator
@@ -562,7 +575,7 @@ export default class EasyUI5Generator extends Generator {
 				if (selectedSubGenerator.length == 1) {
 					subGenerators = selectedSubGenerator;
 				} else {
-					this.log(`The generator ${chalk.red(this.options.generator)} has no subcommand ${chalk.red(this.options.subcommand)}. Please select an existing subcommand!`);
+					this.logger.error(`The generator ${chalk.red(this.options.generator)} has no subcommand ${chalk.red(this.options.subcommand)}. Please select an existing subcommand!`);
 				}
 			}
 
@@ -639,7 +652,7 @@ export default class EasyUI5Generator extends Generator {
 									subGensToRun.push(theNestedGen.namespace);
 									await resolveNestedGenerator(theNestedGen.namespace);
 								} else {
-									this.log(`The nested generator "${nestedGeneratorInfo.org}/${nestedGeneratorInfo.name}" has no subgenerator "${subcommand || "default"}"! Ignoring execution...`);
+									this.logger.warn(`The nested generator "${nestedGeneratorInfo.org}/${nestedGeneratorInfo.name}" has no subgenerator "${subcommand || "default"}"! Ignoring execution...`);
 								}
 							}
 						}) || [],
@@ -668,7 +681,7 @@ export default class EasyUI5Generator extends Generator {
 				};
 
 				if (this.options.verbose) {
-					this.log(`Running generators in "${generatorPath}"...`);
+					this.logger.debug(`Running generators in "${generatorPath}"...`);
 				}
 
 				// chain the execution of the generators
@@ -700,20 +713,20 @@ export default class EasyUI5Generator extends Generator {
 				});
 				*/
 			} else {
-				this.log(`The generator ${chalk.red(this.options.generator)} has no visible subgenerators!`);
+				this.logger.error(`The generator ${chalk.red(this.options.generator)} has no visible subgenerators!`);
 			}
 		} else {
 			// zip the content of the plugin generator or
 			// install the dependencies of the generator
 			if (this.options.verbose) {
-				this.log(`Embedding plugin generator ${chalk.yellow(generator.name)}...`);
+				this.logger.debug(`Embedding plugin generator ${chalk.yellow(generator.name)}...`);
 			}
 			const generatorZIP = new AdmZip();
 			const addLocalFile = (file) => {
 				const filePath = path.join(generator.name, path.relative(generatorPath, file));
 				generatorZIP.addLocalFile(file, path.dirname(filePath), path.basename(filePath));
 				if (this.options.verbose) {
-					this.log(`  + file: ${file}`);
+					this.logger.debug(`  + file: ${file}`);
 				}
 			};
 			glob.sync(`${generatorPath}/*`, { nodir: true, dot: true }).forEach(addLocalFile);
@@ -721,20 +734,22 @@ export default class EasyUI5Generator extends Generator {
 			const generatorZIPPath = path.join(__dirname, "../../plugins", `${generator.name}.zip`);
 			generatorZIP.writeZip(generatorZIPPath);
 			if (this.options.verbose) {
-				this.log(`Stored plugin generator ${chalk.yellow(generator.name)} zip to "${generatorZIPPath}"!`);
+				this.logger.ok(`Stored plugin generator ${chalk.yellow(generator.name)} zip to "${generatorZIPPath}"!`);
 			}
 		}
 	}
 
 	end() {
 		if (this.config.get("initrepo")) {
-			this.spawnCommandSync("git", ["init", "--quiet"], {
+			// yeoman-generator v8+: `spawnSync` is the arg-array variant;
+			// `spawnCommandSync` would parse a single shell string instead.
+			this.spawnSync("git", ["init", "--quiet"], {
 				cwd: this.destinationPath(),
 			});
-			this.spawnCommandSync("git", ["add", "."], {
+			this.spawnSync("git", ["add", "."], {
 				cwd: this.destinationPath(),
 			});
-			this.spawnCommandSync("git", ["commit", "--quiet", "--allow-empty", "-m", "Initial commit"], {
+			this.spawnSync("git", ["commit", "--quiet", "--allow-empty", "-m", "Initial commit"], {
 				cwd: this.destinationPath(),
 			});
 		}

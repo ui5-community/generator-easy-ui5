@@ -100,7 +100,7 @@ export default [
 	// --- Tests: lint them too, with mocha globals and relaxed security ---
 	{
 		files: ["test/**/*.js"],
-		ignores: ["test/_/**", "test/generator-ui5-test-v4/**", "test/generator-ui5-test-v5/**"],
+		ignores: ["test/_/**", "test/generator-ui5-test-v*/**"],
 		languageOptions: {
 			globals: {
 				...globals.node,
@@ -124,10 +124,9 @@ export default [
 			// Ignore plugin generators (copies of the generators, populated at runtime)
 			"plugin-generators/",
 
-			// Ignore test fixtures (generator-ui5-test-v4/-v5) and the test workdir (_)
+			// Ignore the test workdir (_) and all yeoman-generator-version fixtures
 			"test/_/",
-			"test/generator-ui5-test-v4/",
-			"test/generator-ui5-test-v5/",
+			"test/generator-ui5-test-v*/",
 		],
 	},
 ];

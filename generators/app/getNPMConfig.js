@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
+import { createLogger } from "./log.js";
+
 // Singleton cache of the merged config map.
 let npmConfig;
 
@@ -192,11 +194,11 @@ function maybeWarnLegacyNpmrcKeys(npmrcAll) {
 	const legacy = Object.keys(npmrcAll).filter((k) => k.startsWith("easy-ui5_"));
 	if (legacy.length === 0) return;
 	legacyWarningEmitted = true;
-	// One line on stderr — quiet enough to ignore, loud enough to notice.
-	// We deliberately avoid chalk here to keep this module dependency-free.
-	process.stderr.write(
-		"easy-ui5: found legacy easy-ui5_* keys in ~/.npmrc " + `(${legacy.join(", ")}). These will be ignored in a future release. ` + "Move them to ~/.easyui5rc.json — see README.\n",
-	);
+	// One [WARN]-tagged line on stderr. We instantiate the logger without
+	// chalk here to keep this module renderable from tests/non-TTY callers
+	// — the tag still surfaces, colour just becomes a no-op.
+	const logger = createLogger();
+	logger.warn(`Found legacy easy-ui5_* keys in ~/.npmrc (${legacy.join(", ")}). These will be ignored in a future release. Move them to ~/.easyui5rc.json — see README.`);
 }
 
 // ---------- merge ----------

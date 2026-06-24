@@ -96,7 +96,7 @@ const SINCE = resolveSinceRef();
 log(`Walking commits in range ${SINCE}..HEAD`);
 
 function listCommits(range) {
-	const raw = gitOptional("log", "--no-merges", "--reverse", `--format=%H%x00%s%x00%b%x1e`, range);
+	const raw = gitOptional("log", "--no-merges", "--reverse", "--format=%H%x00%s%x00%b%x1e", range);
 	if (!raw) return [];
 	return raw
 		.split("\x1e")

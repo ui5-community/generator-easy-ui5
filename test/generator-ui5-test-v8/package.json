@@ -1,0 +1,18 @@
+{
+  "name": "generator-ui5-test-v8",
+  "private": true,
+  "module": "generators/app/index.js",
+  "type": "module",
+  "keywords": [
+    "yeoman-generator"
+  ],
+  "files": [
+    "helpers",
+    "generators"
+  ],
+  "dependencies": {
+    "glob": "^13.0.6",
+    "yeoman-generator": "^8.2.2",
+    "yosay": "^3.0.0"
+  }
+}
