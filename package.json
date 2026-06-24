@@ -12,7 +12,7 @@
     "node": ">=20.19"
   },
   "scripts": {
-    "prepublishOnly": "npx yo@5.1.0 ./generators/app/index.js project --embed",
+    "embed": "npx yo@7.0.1 ./generators/app/index.js project --embed",
     "start": "yo easy-ui5 project",
     "test": "mocha",
     "test:subgen:list": "yo easy-ui5 project --list",

@@ -97,6 +97,12 @@ Requires Node.js `>=20.19` (matches `engines.node` in `package.json`).
 - `npm run changeset:empty` — write an empty changeset (no version bump). Use
   for docs-only or tooling-only PRs that still need to pass the changeset gate.
 - `npm run changeset:status` — preview what the next release would publish.
+- `npm run embed` — invoke the generator with `--embed` to download the
+  public plugin generators and snapshot them into `plugins/*.zip`. The
+  release workflow runs this for you; you only need it if you're
+  publishing locally (rare — the workflow is the intended path).
+  Authenticate with `EASY_UI5_GH_AUTH_TOKEN=<your-pat>` to avoid GitHub's
+  unauthenticated rate limit.
 
 ### Configuration for local testing
 
@@ -160,3 +166,26 @@ itself was being merged).
 > :information_source: The legacy "bump `package.json` + push a tag" flow has
 > been retired. Don't run `npm version` locally; the `Version Packages` PR is
 > the only path to a release.
+
+### What the release workflow does (in order)
+
+1. `npm ci --ignore-scripts` — fresh, deterministic install.
+2. `npm audit --audit-level=high` — fail on known high/critical CVEs.
+3. `npm test` — full Mocha suite.
+4. **`npm run embed`** — invokes the generator with `--embed` to download
+   the public plugin generators from `ui5-community` and snapshot them into
+   `plugins/*.zip`. The GitHub fetch uses the workflow's `GITHUB_TOKEN`
+   (exposed as `EASY_UI5_GH_AUTH_TOKEN`) so the unauthenticated 60-req/hour
+   rate limit does not apply. Running this **before** the publish step
+   means a transient GitHub failure aborts the release before the version
+   bump is committed.
+5. `changesets/action` — opens or updates the `Version Packages` PR; when
+   that PR's merge triggers this same workflow, the action invokes
+   `npm run release-publish` (`changeset publish` → `npm publish`).
+6. Create a GitHub Release with auto-generated notes.
+
+> :warning: If you ever publish locally (rare; the workflow is the
+> intended path), run `npm run embed` yourself first so the tarball
+> contains the embedded plugin snapshots. `prepublishOnly` no longer does
+> this for you — that was moved out of `package.json` so a GitHub fetch
+> failure can never strand `main` mid-release.

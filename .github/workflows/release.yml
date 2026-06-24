@@ -43,6 +43,18 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # Embed the plugin generators into the published tarball. This runs as
+      # an explicit workflow step (not via `prepublishOnly`) so a failure
+      # fetching from GitHub fails the workflow before Changesets commits a
+      # version bump, leaving `main` in a consistent state. The token is
+      # passed via the generator's first-class EASY_UI5_* env-var surface so
+      # the GitHub fetch is authenticated and doesn't hit the
+      # unauthenticated 60-req/hour rate limit.
+      - name: Embed plugin generators
+        env:
+          EASY_UI5_GH_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run embed
+
       # Optional fallback for the very first release when OIDC isn't yet
       # configured for the npm package. If NPM_BOOTSTRAP_TOKEN is defined the
       # publish falls back to token-based auth; once OIDC is wired, drop the
