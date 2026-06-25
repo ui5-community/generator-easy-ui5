@@ -68,7 +68,7 @@ export default class EasyUI5Generator extends Generator {
 			// `(command, execaOptions)` (no args array — it parses the shell
 			// string), whereas `spawn` takes `(command, args[], options)`. We
 			// pass argv as an array, so we want `spawn`.
-			this.spawn("npm", ["install", "--no-progress", "--ignore-engines", "--ignore-scripts", "--prefer-offline"], {
+			this.spawn("npm", ["install", "--no-progress", "--ignore-engines", "--ignore-scripts"], {
 				stdio: this.config.verbose ? "inherit" : "ignore",
 				cwd: dir,
 				env: {
@@ -496,7 +496,7 @@ export default class EasyUI5Generator extends Generator {
 				const generatorIdx = (
 					await this.prompt([
 						{
-							type: "list",
+							type: "select",
 							name: "generator",
 							message: "Select your generator?",
 							choices: availGenerators.map((availGenerator, idx) => ({
@@ -617,7 +617,7 @@ export default class EasyUI5Generator extends Generator {
 					subGenerator = (
 						await this.prompt([
 							{
-								type: "list",
+								type: "select",
 								name: "subGenerator",
 								message: "What do you want to do?",
 								default: defaultSubGenerator && defaultSubGenerator.value,
