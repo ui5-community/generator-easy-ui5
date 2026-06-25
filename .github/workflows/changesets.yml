@@ -1,0 +1,55 @@
+name: Changesets
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# Cancel an older run when a newer commit is pushed to the same PR.
+concurrency:
+  group: changesets-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Changeset required
+    runs-on: ubuntu-latest
+    # The "Version Packages" PR opened by the Release workflow is itself
+    # supposed to consume all pending changesets, so it never carries one.
+    # Skip the gate for that PR.
+    if: github.head_ref != 'changeset-release/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify a changeset is present
+        run: |
+          # `changeset status --since=<base>` exits non-zero when the diff
+          # against `main` contains changes that aren't covered by a
+          # .changeset/*.md entry. That's exactly the gate we want.
+          if ! npx --no-install changeset status --since=origin/main; then
+            echo ""
+            echo "::error::No changeset found for this PR."
+            echo ""
+            echo "Run one of the following locally and commit the generated file:"
+            echo "  npm run changeset          # interactive: pick a bump + write a summary"
+            echo "  npm run changeset:auto     # derive entries from your conventional commits"
+            echo "  npm run changeset:empty    # for docs / tooling-only PRs (no version bump)"
+            echo ""
+            echo "See CONTRIBUTING.md -> 'Release Life-Cycle' for details."
+            exit 1
+          fi

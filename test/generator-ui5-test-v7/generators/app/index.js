@@ -11,7 +11,7 @@ export default class extends Generator {
 
 	async writing() {
 		if (!this.options.embedded) {
-			this.log(yosay("Welcome to the test-v5 generator!"));
+			this.log(yosay("Welcome to the test-v7 generator!"));
 		}
 
 		const oConfig = this.config.getAll();

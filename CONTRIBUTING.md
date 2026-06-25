@@ -56,31 +56,136 @@ Make sure the change would be welcome (e.g. a bugfix or a useful feature); best 
 
 1. Create a branch forking the generator-easy-ui5 repository and do your change.
 
-2. Commit (with a commit message following the [conventional-commit](https://www.conventionalcommits.org/) syntax) and push your changes on that branch.
+1. Commit (with a commit message following the [conventional-commit](https://www.conventionalcommits.org/) syntax) and push your changes on that branch.
 
-3. If your change fixes an issue reported at GitHub, add a [keyword](https://help.github.com/articles/closing-issues-using-keywords/) like `fix <issue ID>` to the commit message.
+1. If your change fixes an issue reported at GitHub, add a [keyword](https://help.github.com/articles/closing-issues-using-keywords/) like `fix <issue ID>` to the commit message.
 
-4. Create a Pull Request to this repository.
+1. **Add a changeset.** Run `npm run changeset` and answer the prompts (semver
+   bump + summary), then commit the generated `.changeset/<random-name>.md` file
+   alongside your code change. If your PR is docs-only or otherwise doesn't warrant a release, use `npm run changeset:empty`. The [Changesets](.github/workflows/changesets.yml) workflow runs on every PR and fails the check if no changeset is found. See [Release Life-Cycle](#release-life-cycle) below.
 
-5. Wait for our code review and approval, possibly enhancing your change on request.
+1. Create a Pull Request to this repository.
+
+1. Wait for our code review and approval, possibly enhancing your change on request.
 
 Note that the developers also have their regular duties, so depending on the required effort for reviewing, testing and clarification this may take a while.
 
-6. Once the change has been approved we will inform you in a comment.
+1. Once the change has been approved we will inform you in a comment.
 
-## How to release - the Process
+## Local development
 
-:warning: NPM > v8.x must be used for the release process!
+Requires Node.js `>=20.19` (matches `engines.node` in `package.json`).
 
-First, make sure that you pull the latest state of the GitHub repository and then proceed with the following steps:
+### Useful scripts
 
-1. Make sure you have `husky` and `npm-run-all` installed globally:
+- `npm test` — run the Mocha test suite. Includes unit tests for the
+  configuration reader (`test/getNPMConfig.test.js`) and end-to-end generator
+  scenarios (`test/basic.js`).
+- `npm run lint` — run ESLint locally. Reports the project's flat-config rules
+  plus advisory checks from `eslint-plugin-n` and `eslint-plugin-security`.
+  Warnings do not fail the local run.
+- `npm run lint:ci` — strict variant used by CI: identical rules, but
+  `--max-warnings 0` so any new advisory finding fails the build.
+- `npm run format` / `npm run format:staged` — Prettier formatting.
+- `npm run changeset` — start an interactive Changesets prompt to record the
+  semver bump + summary for your PR.
+- `npm run changeset:auto` — scan your branch's conventional commits and emit
+  one Changesets entry per qualifying commit (`feat:` → minor, `fix:`/`perf:`
+  → patch, `!`/`BREAKING CHANGE:` → major). Useful when you've already written
+  a tidy commit history. Idempotent: re-runs skip commits an existing changeset
+  already references.
+- `npm run changeset:empty` — write an empty changeset (no version bump). Use
+  for docs-only or tooling-only PRs that still need to pass the changeset gate.
+- `npm run changeset:status` — preview what the next release would publish.
+- `npm run embed` — invoke the generator with `--embed` to download the
+  public plugin generators and snapshot them into `plugins/*.zip`. The
+  release workflow runs this for you; you only need it if you're
+  publishing locally (rare — the workflow is the intended path).
+  Authenticate with `EASY_UI5_GH_AUTH_TOKEN=<your-pat>` to avoid GitHub's
+  unauthenticated rate limit.
 
-   ```sh
-   npm install -g husky npm-run-all
-   ```
+### Configuration for local testing
 
-1. Update the version: `npm version patch|minor|major`
-1. Push the new commit and tag: `git push && git push --tags`
+If you need a GitHub token or a custom GitHub host while running the generator
+locally (e.g. against an internal SAP GitHub Enterprise instance), put the
+values in `~/.easyui5rc.json`:
 
-A GitHub action will do the needful once the new tag has been pushed.
+```json
+{
+  "ghAuthToken": "ghp_...",
+  "ghBaseUrl": "https://github.tools.sap/api/v3"
+}
+```
+
+For CI use the `EASY_UI5_*` environment variables instead (see the README's
+_Configuration_ section). The legacy `easy-ui5_*` keys in `~/.npmrc` are still
+read but produce a one-time deprecation warning — please migrate.
+
+### Logging
+
+Diagnostic output goes through the tagged logger at
+[generators/app/log.js](generators/app/log.js). Use the appropriate severity
+so messages line up cleanly and stream to the right channel:
+
+- `this.logger.debug(...)` — verbose internals (only shown with `--verbose`).
+- `this.logger.info(...)` — informational status (cyan `[INFO ]`, stdout).
+- `this.logger.ok(...)` — successful operation (green `[OK   ]`, stdout).
+- `this.logger.warn(...)` — recoverable / unexpected (yellow `[WARN ]`, stderr).
+- `this.logger.error(...)` — fatal or user-actionable failure (red `[ERROR]`, stderr).
+- `this.logger.plain(...)` — print a line **without** a category tag. Reserve
+  for cosmetic output like banners or formatted help tables.
+
+`this.log(...)` (the Yeoman framework method) is still acceptable for cosmetic
+output that goes through Yeoman's adapter (the welcome banner, the `--list`
+help table, the `--plugins` info dump). Don't use it — or `console.*` — for
+new diagnostic messages.
+
+## Release Life-Cycle
+
+This project uses [Changesets](https://github.com/changesets/changesets) for
+versioning and releases. Releases are automated end-to-end:
+
+1. **Author a changeset in your PR.** `npm run changeset` interactively records
+   the semver bump (`patch` / `minor` / `major`) and a one-line summary. Commit
+   the resulting `.changeset/<random-name>.md` file. Skip with
+   `npm run changeset:empty` if the PR doesn't ship anything to users.
+
+2. **Merge to `main`.** The [Release](.github/workflows/release.yml) workflow
+   collects every pending changeset and opens — or updates — a single
+   `Version Packages` PR. That PR bumps `version` in `package.json` and rewrites
+   `CHANGELOG.md` from the changesets.
+
+3. **Merge the `Version Packages` PR.** The same workflow then publishes the
+   new version to npm via OIDC Trusted Publishing, creates a matching git tag,
+   and cuts a GitHub Release with auto-generated notes.
+
+The workflow can be re-triggered manually from _Actions → Release → Run
+workflow_ — useful if the automatic run was skipped (e.g. when a release PR
+itself was being merged).
+
+> :information_source: The legacy "bump `package.json` + push a tag" flow has
+> been retired. Don't run `npm version` locally; the `Version Packages` PR is
+> the only path to a release.
+
+### What the release workflow does (in order)
+
+1. `npm ci --ignore-scripts` — fresh, deterministic install.
+2. `npm audit --audit-level=high` — fail on known high/critical CVEs.
+3. `npm test` — full Mocha suite.
+4. **`npm run embed`** — invokes the generator with `--embed` to download
+   the public plugin generators from `ui5-community` and snapshot them into
+   `plugins/*.zip`. The GitHub fetch uses the workflow's `GITHUB_TOKEN`
+   (exposed as `EASY_UI5_GH_AUTH_TOKEN`) so the unauthenticated 60-req/hour
+   rate limit does not apply. Running this **before** the publish step
+   means a transient GitHub failure aborts the release before the version
+   bump is committed.
+5. `changesets/action` — opens or updates the `Version Packages` PR; when
+   that PR's merge triggers this same workflow, the action invokes
+   `npm run release-publish` (`changeset publish` → `npm publish`).
+6. Create a GitHub Release with auto-generated notes.
+
+> :warning: If you ever publish locally (rare; the workflow is the
+> intended path), run `npm run embed` yourself first so the tarball
+> contains the embedded plugin snapshots. `prepublishOnly` no longer does
+> this for you — that was moved out of `package.json` so a GitHub fetch
+> failure can never strand `main` mid-release.

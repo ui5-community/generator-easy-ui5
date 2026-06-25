@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Manual trigger
+
+env:
+  HUSKY_SKIP: true
+
+# Avoid concurrent releases that would race on the same "Version Packages" PR.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # create the "Version Packages" PR and tags
+  pull-requests: write # open/update the version PR
+  id-token: write # REQUIRED for npm OIDC trusted publishing
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Run tests
+        run: npm test
+
+      # Embed the plugin generators into the published tarball. This runs as
+      # an explicit workflow step (not via `prepublishOnly`) so a failure
+      # fetching from GitHub fails the workflow before Changesets commits a
+      # version bump, leaving `main` in a consistent state. The token is
+      # passed via the generator's first-class EASY_UI5_* env-var surface so
+      # the GitHub fetch is authenticated and doesn't hit the
+      # unauthenticated 60-req/hour rate limit.
+      - name: Embed plugin generators
+        env:
+          EASY_UI5_GH_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run embed
+
+      # Optional fallback for the very first release when OIDC isn't yet
+      # configured for the npm package. If NPM_BOOTSTRAP_TOKEN is defined the
+      # publish falls back to token-based auth; once OIDC is wired, drop the
+      # secret and this step becomes a no-op.
+      - name: Configure NPM bootstrap token (non OIDC flow)
+        env:
+          NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+        if: ${{ env.NPM_BOOTSTRAP_TOKEN != '' }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_BOOTSTRAP_TOKEN}" >> ~/.npmrc
+
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
+        with:
+          version: npm run version-packages
+          publish: npm run release-publish
+          commit: "chore(release): publish"
+          title: "chore(release): publish"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+
+      - name: Create GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: v${{ fromJSON(steps.changesets.outputs.publishedPackages)[0].version }}
+          generate_release_notes: true
