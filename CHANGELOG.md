@@ -1,5 +1,14 @@
 ## <small>3.9.1 (2025-12-29)</small>
 
+## 3.10.1
+
+### Patch Changes
+
+- [#169](https://github.com/ui5-community/generator-easy-ui5/pull/169) [`dafaf9f`](https://github.com/ui5-community/generator-easy-ui5/commit/dafaf9f3b35c3d2f0fad02c5ab895b0b386c3a3e) Thanks [@petermuessig](https://github.com/petermuessig)! - Fix scaffolding interactive flow:
+
+  - Drop `--prefer-offline` from the internal `npm install` invocation; the flag could prevent the install from completing properly when the offline cache is incomplete or stale.
+  - Replace the deprecated inquirer `list` prompt type with `select` for the generator and sub-generator selection prompts.
+
 ## 3.10.0
 
 ### Minor Changes
