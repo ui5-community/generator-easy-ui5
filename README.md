@@ -32,7 +32,7 @@ The purpose of the (preinstalled) `project generator` is to guide you on your fi
 
 ## Requirements
 
-- Get [Node.js](https://nodejs.org/en/download/) (:warning: **version 20.19 or higher**).
+- Get [Node.js](https://nodejs.org/en/download/) (:warning: **version 22.13 or higher**).
 
 ## Download and Installation
 

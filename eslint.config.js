@@ -70,15 +70,7 @@ export default [
 			"n/no-extraneous-require": 2,
 			"n/no-missing-import": 2,
 			// We rely on engines.node — let n verify our usage matches.
-			"n/no-unsupported-features/node-builtins": [
-				2,
-				{
-					// `fs.cpSync` is functional since Node 16.7 and only lost
-					// its "experimental" label in Node 22.3 — it works fine on
-					// our engines.node floor (20.19). Ignore it explicitly.
-					ignores: ["fs.cpSync"],
-				},
-			],
+			"n/no-unsupported-features/node-builtins": 2,
 			// hoist-non-react-statics-style: not all CommonJS interop matters here
 			"n/no-unpublished-import": 0,
 			"n/no-unpublished-require": 0,
