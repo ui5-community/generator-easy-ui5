@@ -217,8 +217,8 @@ Please follow our instructions if you would like to [contribute](https://github.
 
 [npm-image]: https://img.shields.io/npm/v/generator-easy-ui5.svg
 [npm-url]: https://www.npmjs.com/package/generator-easy-ui5
-[test-image]: https://github.com/ui5-community/generator-easy-ui5/actions/workflows/main.yml/badge.svg
-[test-url]: https://github.com/ui5-community/generator-easy-ui5/actions/workflows/main.yml
+[test-image]: https://github.com/ui5-community/generator-easy-ui5/actions/workflows/release.yml/badge.svg
+[test-url]: https://github.com/ui5-community/generator-easy-ui5/actions/workflows/release.yml
 [librariesio-image]: https://img.shields.io/librariesio/github/ui5-community/generator-easy-ui5
 [repo-url]: https://github.com/ui5-community/generator-easy-ui5
 [license-image]: https://img.shields.io/npm/l/generator-easy-ui5.svg
