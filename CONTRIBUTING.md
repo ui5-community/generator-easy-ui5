@@ -74,7 +74,7 @@ Note that the developers also have their regular duties, so depending on the req
 
 ## Local development
 
-Requires Node.js `>=20.19` (matches `engines.node` in `package.json`).
+Requires Node.js `>=22.13` (matches `engines.node` in `package.json`).
 
 ### Useful scripts
 
