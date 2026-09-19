@@ -57,7 +57,7 @@
     "@octokit/plugin-throttling": "11.0.3",
     "@octokit/request": "10.0.10",
     "@octokit/rest": "22.0.1",
-    "adm-zip": "0.5.17",
+    "adm-zip": "0.6.1",
     "chalk": "5.6.2",
     "glob": "13.0.6",
     "node-fetch": "3.3.2",
